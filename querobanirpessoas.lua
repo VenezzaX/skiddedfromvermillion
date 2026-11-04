@@ -17,8 +17,7 @@ local CONFIG_FILE = "TargetHunter_Config.json"
 local SCRIPT_FILE = "TargetHunter.lua"
 
 local MIN_FREE_SLOTS = 1
-local MAX_SEARCH_PAGES = 12
-
+local MAX_SEARCH_PAGES = 10
 local CURRENT_GAME_ID = game.PlaceId
 
 local placeDetailsCache = {}
@@ -59,8 +58,7 @@ end
 local state = {
     Active = false,
     PlaceId = CURRENT_GAME_ID,
-    PlacePresets = { CURRENT_GAME_ID },
-    Keywords = { "yt", "ttk", "ttv" },
+    Keywords = {"yt", "ttk", "ttv"},
     VisitedJobIdsByPlace = {},
     SavedTargets = {}
 }
@@ -81,27 +79,18 @@ local function loadState()
         if success and type(result) == "table" then
             state.Active = result.Active or false
             state.PlaceId = tonumber(result.PlaceId) or CURRENT_GAME_ID
-            state.PlacePresets = result.PlacePresets or { CURRENT_GAME_ID }
-            state.Keywords = result.Keywords or { "yt", "ttk", "ttv" }
+            state.Keywords = result.Keywords or {"yt", "ttk", "ttv"}
             state.SavedTargets = result.SavedTargets or {}
             state.VisitedJobIdsByPlace = result.VisitedJobIdsByPlace or {}
+
+            if result.VisitedJobIds and not result.VisitedJobIdsByPlace then
+                state.VisitedJobIdsByPlace[tostring(state.PlaceId)] = result.VisitedJobIds
+            end
         end
     end
 end
 
 loadState()
-
-local presetExists = false
-for _, id in ipairs(state.PlacePresets) do
-    if id == CURRENT_GAME_ID then
-        presetExists = true
-        break
-    end
-end
-if not presetExists then
-    table.insert(state.PlacePresets, 1, CURRENT_GAME_ID)
-    saveState()
-end
 
 local currentPlaceKey = tostring(CURRENT_GAME_ID)
 state.VisitedJobIdsByPlace[currentPlaceKey] = state.VisitedJobIdsByPlace[currentPlaceKey] or {}
@@ -136,9 +125,9 @@ end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 380, 0, 570)
-MainFrame.Position = UDim2.new(0.5, -190, 0.13, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+MainFrame.Size = UDim2.new(0, 370, 0, 545)
+MainFrame.Position = UDim2.new(0.5, -185, 0.12, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(14, 15, 23)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -146,22 +135,22 @@ MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(38, 42, 64)
+MainStroke.Color = Color3.fromRGB(42, 46, 72)
 MainStroke.Thickness = 1.4
 MainStroke.Parent = MainFrame
 
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 44)
-Header.BackgroundColor3 = Color3.fromRGB(19, 21, 32)
+Header.Size = UDim2.new(1, 0, 0, 42)
+Header.BackgroundColor3 = Color3.fromRGB(20, 22, 34)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
 local HeaderStroke = Instance.new("UIStroke")
-HeaderStroke.Color = Color3.fromRGB(30, 34, 52)
+HeaderStroke.Color = Color3.fromRGB(32, 36, 56)
 HeaderStroke.Thickness = 1
 HeaderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 HeaderStroke.Parent = Header
@@ -178,7 +167,7 @@ IconCorner.CornerRadius = UDim.new(1, 0)
 IconCorner.Parent = TitleIcon
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -100, 1, 0)
+Title.Size = UDim2.new(1, -110, 1, 0)
 Title.Position = UDim2.new(0, 30, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
@@ -190,10 +179,10 @@ Title.Parent = Header
 
 local ServerPill = Instance.new("TextLabel")
 ServerPill.Size = UDim2.new(0, 80, 0, 22)
-ServerPill.Position = UDim2.new(1, -92, 0.5, -11)
-ServerPill.BackgroundColor3 = Color3.fromRGB(26, 29, 44)
+ServerPill.Position = UDim2.new(1, -90, 0.5, -11)
+ServerPill.BackgroundColor3 = Color3.fromRGB(26, 29, 46)
 ServerPill.Font = Enum.Font.Code
-ServerPill.Text = "SRV: " .. (currentJob ~= "" and currentJob:sub(1, 4) or "LOC")
+ServerPill.Text = "SRV: " .. (currentJob ~= "" and currentJob:sub(1, 5) or "LOC")
 ServerPill.TextColor3 = Color3.fromRGB(140, 150, 190)
 ServerPill.TextSize = 10
 ServerPill.Parent = Header
@@ -203,9 +192,9 @@ PillCorner.CornerRadius = UDim.new(0, 5)
 PillCorner.Parent = ServerPill
 
 local ActiveGameCard = Instance.new("Frame")
-ActiveGameCard.Size = UDim2.new(1, -24, 0, 72)
-ActiveGameCard.Position = UDim2.new(0, 12, 0, 52)
-ActiveGameCard.BackgroundColor3 = Color3.fromRGB(19, 21, 33)
+ActiveGameCard.Size = UDim2.new(1, -24, 0, 68)
+ActiveGameCard.Position = UDim2.new(0, 12, 0, 50)
+ActiveGameCard.BackgroundColor3 = Color3.fromRGB(20, 22, 34)
 ActiveGameCard.BorderSizePixel = 0
 ActiveGameCard.Parent = MainFrame
 
@@ -214,14 +203,14 @@ ActiveGameCorner.CornerRadius = UDim.new(0, 8)
 ActiveGameCorner.Parent = ActiveGameCard
 
 local ActiveGameStroke = Instance.new("UIStroke")
-ActiveGameStroke.Color = Color3.fromRGB(34, 38, 60)
+ActiveGameStroke.Color = Color3.fromRGB(36, 40, 64)
 ActiveGameStroke.Thickness = 1
 ActiveGameStroke.Parent = ActiveGameCard
 
 local ActiveGameThumb = Instance.new("ImageLabel")
-ActiveGameThumb.Size = UDim2.new(0, 54, 0, 54)
+ActiveGameThumb.Size = UDim2.new(0, 50, 0, 50)
 ActiveGameThumb.Position = UDim2.new(0, 9, 0, 9)
-ActiveGameThumb.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+ActiveGameThumb.BackgroundColor3 = Color3.fromRGB(14, 15, 23)
 ActiveGameThumb.BorderSizePixel = 0
 ActiveGameThumb.ScaleType = Enum.ScaleType.Crop
 ActiveGameThumb.Parent = ActiveGameCard
@@ -231,8 +220,8 @@ ThumbCorner.CornerRadius = UDim.new(0, 6)
 ThumbCorner.Parent = ActiveGameThumb
 
 local ActiveGameTitle = Instance.new("TextLabel")
-ActiveGameTitle.Size = UDim2.new(1, -74, 0, 18)
-ActiveGameTitle.Position = UDim2.new(0, 72, 0, 8)
+ActiveGameTitle.Size = UDim2.new(1, -72, 0, 16)
+ActiveGameTitle.Position = UDim2.new(0, 68, 0, 8)
 ActiveGameTitle.BackgroundTransparency = 1
 ActiveGameTitle.Font = Enum.Font.GothamBold
 ActiveGameTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
@@ -242,9 +231,9 @@ ActiveGameTitle.TextTruncate = Enum.TextTruncate.AtEnd
 ActiveGameTitle.Parent = ActiveGameCard
 
 local PlaceInput = Instance.new("TextBox")
-PlaceInput.Size = UDim2.new(0.52, -4, 0, 26)
-PlaceInput.Position = UDim2.new(0, 72, 0, 36)
-PlaceInput.BackgroundColor3 = Color3.fromRGB(26, 29, 46)
+PlaceInput.Size = UDim2.new(0.5, -4, 0, 26)
+PlaceInput.Position = UDim2.new(0, 68, 0, 32)
+PlaceInput.BackgroundColor3 = Color3.fromRGB(27, 30, 48)
 PlaceInput.TextColor3 = Color3.fromRGB(120, 210, 255)
 PlaceInput.PlaceholderText = tostring(CURRENT_GAME_ID)
 PlaceInput.PlaceholderColor3 = Color3.fromRGB(90, 95, 120)
@@ -259,9 +248,9 @@ PlaceInputCorner.CornerRadius = UDim.new(0, 5)
 PlaceInputCorner.Parent = PlaceInput
 
 local TagsInput = Instance.new("TextBox")
-TagsInput.Size = UDim2.new(0.48, -8, 0, 26)
-TagsInput.Position = UDim2.new(0.52, 74, 0, 36)
-TagsInput.BackgroundColor3 = Color3.fromRGB(26, 29, 46)
+TagsInput.Size = UDim2.new(0.5, -6, 0, 26)
+TagsInput.Position = UDim2.new(0.5, 68, 0, 32)
+TagsInput.BackgroundColor3 = Color3.fromRGB(27, 30, 48)
 TagsInput.TextColor3 = Color3.fromRGB(245, 245, 255)
 TagsInput.PlaceholderText = "yt, ttk, ttv"
 TagsInput.PlaceholderColor3 = Color3.fromRGB(90, 95, 120)
@@ -275,21 +264,6 @@ local TagsInputCorner = Instance.new("UICorner")
 TagsInputCorner.CornerRadius = UDim.new(0, 5)
 TagsInputCorner.Parent = TagsInput
 
-local PresetsScroll = Instance.new("ScrollingFrame")
-PresetsScroll.Size = UDim2.new(1, -24, 0, 26)
-PresetsScroll.Position = UDim2.new(0, 12, 0, 130)
-PresetsScroll.BackgroundTransparency = 1
-PresetsScroll.BorderSizePixel = 0
-PresetsScroll.ScrollBarThickness = 0
-PresetsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-PresetsScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
-PresetsScroll.Parent = MainFrame
-
-local PresetsLayout = Instance.new("UIListLayout")
-PresetsLayout.FillDirection = Enum.FillDirection.Horizontal
-PresetsLayout.Padding = UDim.new(0, 6)
-PresetsLayout.Parent = PresetsScroll
-
 local function updateActiveGameBanner()
     local title, icon = getPlaceDetails(state.PlaceId)
     ActiveGameTitle.Text = title
@@ -297,49 +271,9 @@ local function updateActiveGameBanner()
     PlaceInput.Text = tostring(state.PlaceId)
 end
 
-local function renderPresets()
-    for _, child in ipairs(PresetsScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-
-    for _, pId in ipairs(state.PlacePresets) do
-        local btn = Instance.new("TextButton")
-        local isSelected = (pId == state.PlaceId)
-        local isCurrent = (pId == CURRENT_GAME_ID)
-
-        btn.Size = UDim2.new(0, 0, 1, 0)
-        btn.AutomaticSize = Enum.AutomaticSize.X
-        btn.BackgroundColor3 = isSelected and Color3.fromRGB(50, 75, 150) or Color3.fromRGB(22, 25, 38)
-        btn.Font = Enum.Font.Code
-        btn.Text = string.format("  %s%s  ", tostring(pId), isCurrent and " (Atual)" or "")
-        btn.TextColor3 = isSelected and Color3.fromRGB(240, 245, 255) or (isCurrent and Color3.fromRGB(120, 220, 160) or Color3.fromRGB(150, 155, 180))
-        btn.TextSize = 10
-        btn.Parent = PresetsScroll
-
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 5)
-        corner.Parent = btn
-
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = isSelected and Color3.fromRGB(100, 140, 255) or Color3.fromRGB(34, 38, 58)
-        stroke.Thickness = 1
-        stroke.Parent = btn
-
-        btn.MouseButton1Click:Connect(function()
-            state.PlaceId = pId
-            saveState()
-            updateActiveGameBanner()
-            renderPresets()
-        end)
-    end
-end
-
-renderPresets()
-updateActiveGameBanner()
-
 local TargetHeader = Instance.new("Frame")
 TargetHeader.Size = UDim2.new(1, -24, 0, 20)
-TargetHeader.Position = UDim2.new(0, 12, 0, 162)
+TargetHeader.Position = UDim2.new(0, 12, 0, 126)
 TargetHeader.BackgroundTransparency = 1
 TargetHeader.Parent = MainFrame
 
@@ -347,7 +281,7 @@ local TargetListTitle = Instance.new("TextLabel")
 TargetListTitle.Size = UDim2.new(0.65, 0, 1, 0)
 TargetListTitle.BackgroundTransparency = 1
 TargetListTitle.Font = Enum.Font.GothamBold
-TargetListTitle.Text = string.format("ALVOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
+TargetListTitle.Text = string.format("ALVOS REGISTRADOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
 TargetListTitle.TextColor3 = Color3.fromRGB(140, 145, 175)
 TargetListTitle.TextSize = 10
 TargetListTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -365,8 +299,8 @@ ClearTargetsBtn.TextXAlignment = Enum.TextXAlignment.Right
 ClearTargetsBtn.Parent = TargetHeader
 
 local TargetsScroll = Instance.new("ScrollingFrame")
-TargetsScroll.Size = UDim2.new(1, -24, 0, 298)
-TargetsScroll.Position = UDim2.new(0, 12, 0, 186)
+TargetsScroll.Size = UDim2.new(1, -24, 0, 305)
+TargetsScroll.Position = UDim2.new(0, 12, 0, 150)
 TargetsScroll.BackgroundColor3 = Color3.fromRGB(17, 18, 28)
 TargetsScroll.BorderSizePixel = 0
 TargetsScroll.ScrollBarThickness = 3
@@ -380,7 +314,7 @@ TargetsScrollCorner.CornerRadius = UDim.new(0, 8)
 TargetsScrollCorner.Parent = TargetsScroll
 
 local TargetsScrollStroke = Instance.new("UIStroke")
-TargetsScrollStroke.Color = Color3.fromRGB(26, 29, 44)
+TargetsScrollStroke.Color = Color3.fromRGB(28, 31, 48)
 TargetsScrollStroke.Thickness = 1
 TargetsScrollStroke.Parent = TargetsScroll
 
@@ -395,36 +329,95 @@ ListPadding.PaddingLeft = UDim.new(0, 6)
 ListPadding.PaddingRight = UDim.new(0, 6)
 ListPadding.Parent = TargetsScroll
 
-local function onPlaceInputChanged()
+local StatusFrame = Instance.new("Frame")
+StatusFrame.Size = UDim2.new(1, -24, 0, 20)
+StatusFrame.Position = UDim2.new(0, 12, 0, 464)
+StatusFrame.BackgroundTransparency = 1
+StatusFrame.Parent = MainFrame
+
+local StatusDot = Instance.new("Frame")
+StatusDot.Size = UDim2.new(0, 6, 0, 6)
+StatusDot.Position = UDim2.new(0, 2, 0.5, -3)
+StatusDot.BackgroundColor3 = state.Active and Color3.fromRGB(100, 240, 140) or Color3.fromRGB(130, 135, 160)
+StatusDot.BorderSizePixel = 0
+StatusDot.Parent = StatusFrame
+
+local StatusDotCorner = Instance.new("UICorner")
+StatusDotCorner.CornerRadius = UDim.new(1, 0)
+StatusDotCorner.Parent = StatusDot
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, -16, 1, 0)
+StatusLabel.Position = UDim2.new(0, 16, 0, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Font = Enum.Font.GothamMedium
+StatusLabel.Text = state.Active and "Varredura contínua ativa..." or "Aguardando início..."
+StatusLabel.TextColor3 = state.Active and Color3.fromRGB(110, 210, 255) or Color3.fromRGB(150, 155, 180)
+StatusLabel.TextSize = 10.5
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.TextTruncate = Enum.TextTruncate.AtEnd
+StatusLabel.Parent = StatusFrame
+
+local ActionsContainer = Instance.new("Frame")
+ActionsContainer.Size = UDim2.new(1, -24, 0, 42)
+ActionsContainer.Position = UDim2.new(0, 12, 0, 490)
+ActionsContainer.BackgroundTransparency = 1
+ActionsContainer.Parent = MainFrame
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0.65, -4, 1, 0)
+ToggleButton.Position = UDim2.new(0, 0, 0, 0)
+ToggleButton.BackgroundColor3 = state.Active and Color3.fromRGB(225, 65, 75) or Color3.fromRGB(85, 105, 235)
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Text = state.Active and "Parar Varredura" or "Iniciar Varredura & Hop"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 12
+ToggleButton.Parent = ActionsContainer
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = ToggleButton
+
+local ForceHopBtn = Instance.new("TextButton")
+ForceHopBtn.Size = UDim2.new(0.35, -4, 1, 0)
+ForceHopBtn.Position = UDim2.new(0.65, 4, 0, 0)
+ForceHopBtn.BackgroundColor3 = Color3.fromRGB(36, 42, 66)
+ForceHopBtn.Font = Enum.Font.GothamBold
+ForceHopBtn.Text = "Saltar Já"
+ForceHopBtn.TextColor3 = Color3.fromRGB(215, 225, 255)
+ForceHopBtn.TextSize = 12
+ForceHopBtn.Parent = ActionsContainer
+
+local ForceCorner = Instance.new("UICorner")
+ForceCorner.CornerRadius = UDim.new(0, 8)
+ForceCorner.Parent = ForceHopBtn
+
+local function syncPlaceId()
     local cleaned = PlaceInput.Text:gsub("%D", "")
     local num = tonumber(cleaned)
     if num and num > 0 then
         state.PlaceId = num
-        local exists = false
-        for _, id in ipairs(state.PlacePresets) do
-            if id == num then exists = true; break end
-        end
-        if not exists then
-            table.insert(state.PlacePresets, 1, num)
-            if #state.PlacePresets > 10 then table.remove(state.PlacePresets) end
-        end
         saveState()
         updateActiveGameBanner()
-        renderPresets()
-        TargetListTitle.Text = string.format("ALVOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
+        TargetListTitle.Text = string.format("ALVOS REGISTRADOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
+    else
+        PlaceInput.Text = tostring(state.PlaceId)
     end
 end
 
-PlaceInput:GetPropertyChangedSignal("Text"):Connect(onPlaceInputChanged)
 PlaceInput.FocusLost:Connect(function()
-    PlaceInput.Text = tostring(state.PlaceId)
+    syncPlaceId()
 end)
+
+updateActiveGameBanner()
 
 local queueReinject = nil
 
 local function renderCard(data)
-    local hasNickChange = data.changedNick and data.previousUsername and data.previousUsername ~= ""
-    local cardHeight = hasNickChange and 88 or 74
+    local currentNick = tostring(data.username or data.currentUsername or "Desconhecido")
+    local prevNick = data.previousNick or data.previousUsername
+    local hasNickChange = (prevNick ~= nil and prevNick ~= "" and prevNick ~= currentNick)
+    local cardHeight = hasNickChange and 86 or 72
 
     local card = Instance.new("Frame")
     card.Size = UDim2.new(1, 0, 0, cardHeight)
@@ -441,13 +434,16 @@ local function renderCard(data)
     cardStroke.Thickness = 1
     cardStroke.Parent = card
 
+    local targetPlaceId = tonumber(data.placeId) or CURRENT_GAME_ID
+    local _, placeIcon = getPlaceDetails(targetPlaceId)
+
     local gameThumb = Instance.new("ImageLabel")
-    gameThumb.Size = UDim2.new(0, 44, 0, 44)
+    gameThumb.Size = UDim2.new(0, 42, 0, 42)
     gameThumb.Position = UDim2.new(0, 8, 0, 8)
     gameThumb.BackgroundColor3 = Color3.fromRGB(14, 15, 23)
     gameThumb.BorderSizePixel = 0
     gameThumb.ScaleType = Enum.ScaleType.Crop
-    gameThumb.Image = data.placeIcon or ("rbxthumb://type=GameIcon&id=" .. tostring(data.placeId or CURRENT_GAME_ID) .. "&w=150&h=150")
+    gameThumb.Image = data.placeIcon or placeIcon
     gameThumb.Parent = card
 
     local thumbCorner = Instance.new("UICorner")
@@ -455,11 +451,11 @@ local function renderCard(data)
     thumbCorner.Parent = gameThumb
 
     local tagBadge = Instance.new("TextLabel")
-    tagBadge.Size = UDim2.new(0, 44, 0, 15)
-    tagBadge.Position = UDim2.new(0, 8, 0, 54)
+    tagBadge.Size = UDim2.new(0, 42, 0, 14)
+    tagBadge.Position = UDim2.new(0, 8, 0, 53)
     tagBadge.BackgroundColor3 = Color3.fromRGB(38, 44, 72)
     tagBadge.Font = Enum.Font.GothamBold
-    tagBadge.Text = data.tag
+    tagBadge.Text = tostring(data.tag or "ALVO")
     tagBadge.TextColor3 = Color3.fromRGB(120, 205, 255)
     tagBadge.TextSize = 8.5
     tagBadge.Parent = card
@@ -469,11 +465,11 @@ local function renderCard(data)
     badgeCorner.Parent = tagBadge
 
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, -195, 0, 16)
-    nameLabel.Position = UDim2.new(0, 58, 0, 6)
+    nameLabel.Size = UDim2.new(1, -190, 0, 16)
+    nameLabel.Position = UDim2.new(0, 56, 0, 6)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.Text = (hasNickChange and "[NOVO NICK] " or "") .. data.displayName .. " (@" .. data.currentUsername .. ")"
+    nameLabel.Text = (hasNickChange and "[NOVO NICK] " or "") .. tostring(data.displayName or currentNick) .. " (@" .. currentNick .. ")"
     nameLabel.TextColor3 = hasNickChange and Color3.fromRGB(120, 240, 170) or Color3.fromRGB(240, 245, 255)
     nameLabel.TextSize = 10.5
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -484,47 +480,47 @@ local function renderCard(data)
 
     if hasNickChange then
         local oldNickLabel = Instance.new("TextLabel")
-        oldNickLabel.Size = UDim2.new(1, -195, 0, 14)
-        oldNickLabel.Position = UDim2.new(0, 58, 0, currY)
+        oldNickLabel.Size = UDim2.new(1, -190, 0, 14)
+        oldNickLabel.Position = UDim2.new(0, 56, 0, currY)
         oldNickLabel.BackgroundTransparency = 1
         oldNickLabel.Font = Enum.Font.GothamMedium
-        oldNickLabel.Text = "↺ Antigo: @" .. data.previousUsername
+        oldNickLabel.Text = "↺ Antigo: @" .. tostring(prevNick)
         oldNickLabel.TextColor3 = Color3.fromRGB(245, 185, 75)
         oldNickLabel.TextSize = 9.5
         oldNickLabel.TextXAlignment = Enum.TextXAlignment.Left
         oldNickLabel.TextTruncate = Enum.TextTruncate.AtEnd
         oldNickLabel.Parent = card
-        currY = currY + 15
+        currY = currY + 14
     end
 
     local gameNameLabel = Instance.new("TextLabel")
-    gameNameLabel.Size = UDim2.new(1, -195, 0, 14)
-    gameNameLabel.Position = UDim2.new(0, 58, 0, currY)
+    gameNameLabel.Size = UDim2.new(1, -190, 0, 14)
+    gameNameLabel.Position = UDim2.new(0, 56, 0, currY)
     gameNameLabel.BackgroundTransparency = 1
     gameNameLabel.Font = Enum.Font.GothamMedium
-    gameNameLabel.Text = string.format("🎮 %s (%s)", data.placeTitle or "Jogo", tostring(data.placeId or CURRENT_GAME_ID))
+    gameNameLabel.Text = string.format("🎮 %s (%s)", tostring(data.placeTitle or ("Place #" .. tostring(targetPlaceId))), tostring(targetPlaceId))
     gameNameLabel.TextColor3 = Color3.fromRGB(130, 215, 200)
     gameNameLabel.TextSize = 9
     gameNameLabel.TextXAlignment = Enum.TextXAlignment.Left
     gameNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     gameNameLabel.Parent = card
 
-    currY = currY + 15
+    currY = currY + 14
 
     local serverInfo = Instance.new("TextLabel")
     serverInfo.Size = UDim2.new(1, -16, 0, 13)
-    serverInfo.Position = UDim2.new(0, 58, 0, currY)
+    serverInfo.Position = UDim2.new(0, 56, 0, currY)
     serverInfo.BackgroundTransparency = 1
     serverInfo.Font = Enum.Font.Code
-    serverInfo.Text = string.format("Job: %s • %s", (data.jobId and data.jobId:sub(1, 10) .. "..." or "N/A"), data.seenAt or "Agora")
+    serverInfo.Text = string.format("Job: %s • %s", (data.jobId and data.jobId:sub(1, 10) .. "..." or "N/A"), tostring(data.seenAt or "Agora"))
     serverInfo.TextColor3 = Color3.fromRGB(110, 115, 140)
     serverInfo.TextSize = 8.5
     serverInfo.TextXAlignment = Enum.TextXAlignment.Left
     serverInfo.Parent = card
 
     local joinBtn = Instance.new("TextButton")
-    joinBtn.Size = UDim2.new(0, 58, 0, 26)
-    joinBtn.Position = UDim2.new(1, -130, 0, 8)
+    joinBtn.Size = UDim2.new(0, 56, 0, 26)
+    joinBtn.Position = UDim2.new(1, -126, 0, 8)
     joinBtn.BackgroundColor3 = Color3.fromRGB(48, 56, 90)
     joinBtn.Font = Enum.Font.GothamBold
     joinBtn.Text = "Entrar"
@@ -547,13 +543,15 @@ local function renderCard(data)
             joinBtn.TextColor3 = Color3.fromRGB(255, 210, 100)
             if queueReinject then queueReinject() end
             task.wait(0.2)
-            TeleportService:TeleportToPlaceInstance(data.placeId or state.PlaceId or CURRENT_GAME_ID, data.jobId, LocalPlayer)
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(targetPlaceId, data.jobId, LocalPlayer)
+            end)
         end)
     end
 
     local copyBtn = Instance.new("TextButton")
-    copyBtn.Size = UDim2.new(0, 58, 0, 26)
-    copyBtn.Position = UDim2.new(1, -66, 0, 8)
+    copyBtn.Size = UDim2.new(0, 56, 0, 26)
+    copyBtn.Position = UDim2.new(1, -64, 0, 8)
     copyBtn.BackgroundColor3 = Color3.fromRGB(34, 38, 58)
     copyBtn.Font = Enum.Font.GothamBold
     copyBtn.Text = "Copiar"
@@ -566,7 +564,7 @@ local function renderCard(data)
     copyBtnCorner.Parent = copyBtn
 
     copyBtn.MouseButton1Click:Connect(function()
-        setClip(data.currentUsername)
+        setClip(currentNick)
         copyBtn.Text = "Copiado!"
         copyBtn.TextColor3 = Color3.fromRGB(100, 240, 140)
         copyBtn.BackgroundColor3 = Color3.fromRGB(28, 52, 42)
@@ -585,10 +583,13 @@ local function refreshTargetsDisplay()
         if child:IsA("Frame") then child:Destroy() end
     end
     for _, target in ipairs(state.SavedTargets) do
-        renderCard(target)
+        pcall(function()
+            renderCard(target)
+        end)
     end
-    TargetListTitle.Text = string.format("ALVOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
+    TargetListTitle.Text = string.format("ALVOS REGISTRADOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
 end
+
 refreshTargetsDisplay()
 
 ClearTargetsBtn.MouseButton1Click:Connect(function()
@@ -596,49 +597,6 @@ ClearTargetsBtn.MouseButton1Click:Connect(function()
     saveState()
     refreshTargetsDisplay()
 end)
-
-local StatusFrame = Instance.new("Frame")
-StatusFrame.Size = UDim2.new(1, -24, 0, 24)
-StatusFrame.Position = UDim2.new(0, 12, 0, 490)
-StatusFrame.BackgroundTransparency = 1
-StatusFrame.Parent = MainFrame
-
-local StatusDot = Instance.new("Frame")
-StatusDot.Size = UDim2.new(0, 6, 0, 6)
-StatusDot.Position = UDim2.new(0, 2, 0.5, -3)
-StatusDot.BackgroundColor3 = state.Active and Color3.fromRGB(100, 240, 140) or Color3.fromRGB(130, 135, 160)
-StatusDot.BorderSizePixel = 0
-StatusDot.Parent = StatusFrame
-
-local StatusDotCorner = Instance.new("UICorner")
-StatusDotCorner.CornerRadius = UDim.new(1, 0)
-StatusDotCorner.Parent = StatusDot
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, -16, 1, 0)
-StatusLabel.Position = UDim2.new(0, 16, 0, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Font = Enum.Font.GothamMedium
-StatusLabel.Text = state.Active and "Varredura contínua ativa..." or "Aguardando início..."
-StatusLabel.TextColor3 = state.Active and Color3.fromRGB(110, 210, 255) or Color3.fromRGB(150, 155, 180)
-StatusLabel.TextSize = 11
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-StatusLabel.TextTruncate = Enum.TextTruncate.AtEnd
-StatusLabel.Parent = StatusFrame
-
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(1, -24, 0, 42)
-ToggleButton.Position = UDim2.new(0, 12, 0, 516)
-ToggleButton.BackgroundColor3 = state.Active and Color3.fromRGB(225, 65, 75) or Color3.fromRGB(85, 105, 235)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = state.Active and "Parar Varredura" or "Iniciar Varredura & Hop"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 13
-ToggleButton.Parent = MainFrame
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 8)
-ToggleCorner.Parent = ToggleButton
 
 local function parseKeywords(inputString)
     local list = {}
@@ -663,7 +621,7 @@ local function scanPlayers()
                     table.insert(matched, {
                         userId = player.UserId,
                         displayName = player.DisplayName,
-                        currentUsername = player.Name,
+                        username = player.Name,
                         tag = tag:upper(),
                         jobId = game.JobId,
                         placeId = game.PlaceId,
@@ -706,6 +664,10 @@ local function hopToUniqueServer()
     if isHopping then return end
     isHopping = true
 
+    task.delay(6, function()
+        isHopping = false
+    end)
+
     local targetPlaceId = state.PlaceId or CURRENT_GAME_ID
     state.PlaceId = targetPlaceId
 
@@ -722,7 +684,7 @@ local function hopToUniqueServer()
             page = page + 1
             StatusDot.BackgroundColor3 = Color3.fromRGB(245, 185, 65)
             StatusLabel.TextColor3 = Color3.fromRGB(245, 185, 65)
-            StatusLabel.Text = string.format("[%s] Pág. %d buscando JobId...", tostring(targetPlaceId):sub(1, 8), page)
+            StatusLabel.Text = string.format("[%s] Pág. %d buscando...", tostring(targetPlaceId):sub(1, 8), page)
 
             local url = string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100%s", tostring(targetPlaceId), cursor and ("&cursor=" .. cursor) or "")
             local body = rawGet(url)
@@ -738,7 +700,7 @@ local function hopToUniqueServer()
                         local isSelf = (srvId == game.JobId and targetPlaceId == game.PlaceId)
                         local alreadyVisited = (state.VisitedJobIdsByPlace[placeKey][srvId] == true)
 
-                        if not isSelf and not alreadyVisited and freeSlots >= MIN_FREE_SLOTS and srv.playing >= 1 then
+                        if not isSelf and not alreadyVisited and freeSlots >= MIN_FREE_SLOTS and (srv.playing or 0) >= 1 then
                             table.insert(freshServers, srvId)
                         end
                     end
@@ -759,27 +721,31 @@ local function hopToUniqueServer()
             task.wait(0.2)
         end
 
+        queueReinject()
+
         if candidate then
             state.VisitedJobIdsByPlace[placeKey][candidate] = true
             saveState()
 
             StatusDot.BackgroundColor3 = Color3.fromRGB(100, 240, 140)
             StatusLabel.TextColor3 = Color3.fromRGB(100, 240, 140)
-            StatusLabel.Text = "Saltando: " .. candidate:sub(1, 10) .. "..."
-            queueReinject()
+            StatusLabel.Text = "Saltando para JobId: " .. candidate:sub(1, 10) .. "..."
 
-            TeleportService:TeleportToPlaceInstance(targetPlaceId, candidate, LocalPlayer)
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(targetPlaceId, candidate, LocalPlayer)
+            end)
         else
             StatusDot.BackgroundColor3 = Color3.fromRGB(240, 140, 90)
             StatusLabel.TextColor3 = Color3.fromRGB(240, 140, 90)
-            StatusLabel.Text = "Resetando instâncias visitadas do mapa..."
+            StatusLabel.Text = "Ciclo completo. Resetando histórico..."
+
             state.VisitedJobIdsByPlace[placeKey] = {}
             if game.PlaceId == targetPlaceId and currentJob and currentJob ~= "" then
                 state.VisitedJobIdsByPlace[placeKey][currentJob] = true
             end
             saveState()
 
-            task.wait(2)
+            task.wait(1.5)
             isHopping = false
             if state.Active then
                 hopToUniqueServer()
@@ -811,7 +777,8 @@ local function runSearchPipeline()
             local foundIndex = nil
 
             for idx, existing in ipairs(state.SavedTargets) do
-                if (item.userId and existing.userId and existing.userId == item.userId) or (existing.currentUsername:lower() == item.currentUsername:lower()) then
+                local exNick = existing.username or existing.currentUsername
+                if (item.userId and existing.userId and existing.userId == item.userId) or (exNick and exNick:lower() == item.username:lower()) then
                     foundIndex = idx
                     break
                 end
@@ -819,16 +786,14 @@ local function runSearchPipeline()
 
             if foundIndex then
                 local existing = state.SavedTargets[foundIndex]
-                if existing.currentUsername ~= item.currentUsername then
-                    item.previousUsername = existing.currentUsername
-                    item.changedNick = true
+                local oldName = existing.username or existing.currentUsername
+                if oldName and oldName ~= item.username then
+                    item.previousNick = oldName
                 else
-                    item.previousUsername = existing.previousUsername
-                    item.changedNick = existing.changedNick
+                    item.previousNick = existing.previousNick or existing.previousUsername
                 end
                 state.SavedTargets[foundIndex] = item
             else
-                item.changedNick = false
                 table.insert(state.SavedTargets, 1, item)
             end
         end
@@ -838,12 +803,12 @@ local function runSearchPipeline()
 
         StatusDot.BackgroundColor3 = Color3.fromRGB(100, 240, 140)
         StatusLabel.TextColor3 = Color3.fromRGB(100, 240, 140)
-        StatusLabel.Text = string.format("Detectado: @%s! Saltando em 2s...", found[1].currentUsername)
+        StatusLabel.Text = string.format("Detectado: @%s! Saltando em 2s...", found[1].username)
 
         pcall(function()
             StarterGui:SetCore("SendNotification", {
                 Title = "Target Hunter",
-                Text = "Alvo: @" .. found[1].currentUsername .. (found[1].changedNick and " (Nick Alterado!)" or ""),
+                Text = "Alvo: @" .. found[1].username .. (found[1].previousNick and " (Nick Alterado!)" or ""),
                 Duration = 5
             })
         end)
@@ -876,10 +841,10 @@ ToggleButton.MouseButton1Click:Connect(function()
     state.Active = not state.Active
 
     if state.Active then
-        onPlaceInputChanged()
+        syncPlaceId()
         state.Keywords = parseKeywords(TagsInput.Text)
         if #state.Keywords == 0 then
-            state.Keywords = { "yt", "ttk", "ttv" }
+            state.Keywords = {"yt", "ttk", "ttv"}
             TagsInput.Text = "yt, ttk, ttv"
         end
 
@@ -895,6 +860,12 @@ ToggleButton.MouseButton1Click:Connect(function()
         StatusLabel.TextColor3 = Color3.fromRGB(150, 155, 180)
         StatusLabel.Text = "Varredura pausada."
     end
+end)
+
+ForceHopBtn.MouseButton1Click:Connect(function()
+    syncPlaceId()
+    isHopping = false
+    hopToUniqueServer()
 end)
 
 if state.Active then
