@@ -5,7 +5,6 @@ local scriptContent = [==[
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
-local MarketplaceService = game:GetService("MarketplaceService")
 local StarterGui = game:GetService("StarterGui")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
@@ -17,32 +16,12 @@ local CONFIG_FILE = "TargetHunter_Config.json"
 local SCRIPT_FILE = "TargetHunter.lua"
 
 local MIN_FREE_SLOTS = 1
-local MAX_SEARCH_PAGES = 10
+local MAX_SEARCH_PAGES = 3
 local CURRENT_GAME_ID = game.PlaceId
 
-local placeDetailsCache = {}
-local function getPlaceDetails(pId)
-    pId = tonumber(pId) or CURRENT_GAME_ID
-    if placeDetailsCache[pId] then
-        return placeDetailsCache[pId].Name, placeDetailsCache[pId].Icon
-    end
-
-    local title = "Place #" .. tostring(pId)
-    local thumb = "rbxthumb://type=GameIcon&id=" .. tostring(pId) .. "&w=150&h=150"
-
-    local success, info = pcall(function()
-        return MarketplaceService:GetProductInfo(pId)
-    end)
-
-    if success and info and info.Name then
-        title = info.Name
-        if info.IconImageAssetId and info.IconImageAssetId > 0 then
-            thumb = "rbxassetid://" .. tostring(info.IconImageAssetId)
-        end
-    end
-
-    placeDetailsCache[pId] = { Name = title, Icon = thumb }
-    return title, thumb
+local function getPlaceThumb(pId)
+    local id = tonumber(pId) or CURRENT_GAME_ID
+    return "rbxthumb://type=GameIcon&id=" .. tostring(id) .. "&w=150&h=150"
 end
 
 local function setClip(text)
@@ -82,10 +61,6 @@ local function loadState()
             state.Keywords = result.Keywords or {"yt", "ttk", "ttv"}
             state.SavedTargets = result.SavedTargets or {}
             state.VisitedJobIdsByPlace = result.VisitedJobIdsByPlace or {}
-
-            if result.VisitedJobIds and not result.VisitedJobIdsByPlace then
-                state.VisitedJobIdsByPlace[tostring(state.PlaceId)] = result.VisitedJobIds
-            end
         end
     end
 end
@@ -98,7 +73,6 @@ state.VisitedJobIdsByPlace[currentPlaceKey] = state.VisitedJobIdsByPlace[current
 local currentJob = game.JobId
 if currentJob and currentJob ~= "" then
     state.VisitedJobIdsByPlace[currentPlaceKey][currentJob] = true
-    saveState()
 end
 
 local function countVisited(placeId)
@@ -125,7 +99,7 @@ end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 370, 0, 545)
+MainFrame.Size = UDim2.new(0, 370, 0, 530)
 MainFrame.Position = UDim2.new(0.5, -185, 0.12, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 15, 23)
 MainFrame.BorderSizePixel = 0
@@ -171,7 +145,7 @@ Title.Size = UDim2.new(1, -110, 1, 0)
 Title.Position = UDim2.new(0, 30, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Target Hunter • Suite"
+Title.Text = "Target Hunter • Ultra Lite"
 Title.TextColor3 = Color3.fromRGB(240, 243, 255)
 Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -213,6 +187,7 @@ ActiveGameThumb.Position = UDim2.new(0, 9, 0, 9)
 ActiveGameThumb.BackgroundColor3 = Color3.fromRGB(14, 15, 23)
 ActiveGameThumb.BorderSizePixel = 0
 ActiveGameThumb.ScaleType = Enum.ScaleType.Crop
+ActiveGameThumb.Image = getPlaceThumb(state.PlaceId)
 ActiveGameThumb.Parent = ActiveGameCard
 
 local ThumbCorner = Instance.new("UICorner")
@@ -224,6 +199,7 @@ ActiveGameTitle.Size = UDim2.new(1, -72, 0, 16)
 ActiveGameTitle.Position = UDim2.new(0, 68, 0, 8)
 ActiveGameTitle.BackgroundTransparency = 1
 ActiveGameTitle.Font = Enum.Font.GothamBold
+ActiveGameTitle.Text = "Place #" .. tostring(state.PlaceId)
 ActiveGameTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
 ActiveGameTitle.TextSize = 11.5
 ActiveGameTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -264,13 +240,6 @@ local TagsInputCorner = Instance.new("UICorner")
 TagsInputCorner.CornerRadius = UDim.new(0, 5)
 TagsInputCorner.Parent = TagsInput
 
-local function updateActiveGameBanner()
-    local title, icon = getPlaceDetails(state.PlaceId)
-    ActiveGameTitle.Text = title
-    ActiveGameThumb.Image = icon
-    PlaceInput.Text = tostring(state.PlaceId)
-end
-
 local TargetHeader = Instance.new("Frame")
 TargetHeader.Size = UDim2.new(1, -24, 0, 20)
 TargetHeader.Position = UDim2.new(0, 12, 0, 126)
@@ -299,7 +268,7 @@ ClearTargetsBtn.TextXAlignment = Enum.TextXAlignment.Right
 ClearTargetsBtn.Parent = TargetHeader
 
 local TargetsScroll = Instance.new("ScrollingFrame")
-TargetsScroll.Size = UDim2.new(1, -24, 0, 305)
+TargetsScroll.Size = UDim2.new(1, -24, 0, 290)
 TargetsScroll.Position = UDim2.new(0, 12, 0, 150)
 TargetsScroll.BackgroundColor3 = Color3.fromRGB(17, 18, 28)
 TargetsScroll.BorderSizePixel = 0
@@ -331,7 +300,7 @@ ListPadding.Parent = TargetsScroll
 
 local StatusFrame = Instance.new("Frame")
 StatusFrame.Size = UDim2.new(1, -24, 0, 20)
-StatusFrame.Position = UDim2.new(0, 12, 0, 464)
+StatusFrame.Position = UDim2.new(0, 12, 0, 450)
 StatusFrame.BackgroundTransparency = 1
 StatusFrame.Parent = MainFrame
 
@@ -360,7 +329,7 @@ StatusLabel.Parent = StatusFrame
 
 local ActionsContainer = Instance.new("Frame")
 ActionsContainer.Size = UDim2.new(1, -24, 0, 42)
-ActionsContainer.Position = UDim2.new(0, 12, 0, 490)
+ActionsContainer.Position = UDim2.new(0, 12, 0, 476)
 ActionsContainer.BackgroundTransparency = 1
 ActionsContainer.Parent = MainFrame
 
@@ -397,19 +366,16 @@ local function syncPlaceId()
     local num = tonumber(cleaned)
     if num and num > 0 then
         state.PlaceId = num
+        ActiveGameTitle.Text = "Place #" .. tostring(num)
+        ActiveGameThumb.Image = getPlaceThumb(num)
         saveState()
-        updateActiveGameBanner()
         TargetListTitle.Text = string.format("ALVOS REGISTRADOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
     else
         PlaceInput.Text = tostring(state.PlaceId)
     end
 end
 
-PlaceInput.FocusLost:Connect(function()
-    syncPlaceId()
-end)
-
-updateActiveGameBanner()
+PlaceInput.FocusLost:Connect(syncPlaceId)
 
 local queueReinject = nil
 
@@ -417,7 +383,7 @@ local function renderCard(data)
     local currentNick = tostring(data.username or data.currentUsername or "Desconhecido")
     local prevNick = data.previousNick or data.previousUsername
     local hasNickChange = (prevNick ~= nil and prevNick ~= "" and prevNick ~= currentNick)
-    local cardHeight = hasNickChange and 86 or 72
+    local cardHeight = hasNickChange and 84 or 70
 
     local card = Instance.new("Frame")
     card.Size = UDim2.new(1, 0, 0, cardHeight)
@@ -435,7 +401,6 @@ local function renderCard(data)
     cardStroke.Parent = card
 
     local targetPlaceId = tonumber(data.placeId) or CURRENT_GAME_ID
-    local _, placeIcon = getPlaceDetails(targetPlaceId)
 
     local gameThumb = Instance.new("ImageLabel")
     gameThumb.Size = UDim2.new(0, 42, 0, 42)
@@ -443,7 +408,7 @@ local function renderCard(data)
     gameThumb.BackgroundColor3 = Color3.fromRGB(14, 15, 23)
     gameThumb.BorderSizePixel = 0
     gameThumb.ScaleType = Enum.ScaleType.Crop
-    gameThumb.Image = data.placeIcon or placeIcon
+    gameThumb.Image = getPlaceThumb(targetPlaceId)
     gameThumb.Parent = card
 
     local thumbCorner = Instance.new("UICorner")
@@ -452,7 +417,7 @@ local function renderCard(data)
 
     local tagBadge = Instance.new("TextLabel")
     tagBadge.Size = UDim2.new(0, 42, 0, 14)
-    tagBadge.Position = UDim2.new(0, 8, 0, 53)
+    tagBadge.Position = UDim2.new(0, 8, 0, 52)
     tagBadge.BackgroundColor3 = Color3.fromRGB(38, 44, 72)
     tagBadge.Font = Enum.Font.GothamBold
     tagBadge.Text = tostring(data.tag or "ALVO")
@@ -498,7 +463,7 @@ local function renderCard(data)
     gameNameLabel.Position = UDim2.new(0, 56, 0, currY)
     gameNameLabel.BackgroundTransparency = 1
     gameNameLabel.Font = Enum.Font.GothamMedium
-    gameNameLabel.Text = string.format("🎮 %s (%s)", tostring(data.placeTitle or ("Place #" .. tostring(targetPlaceId))), tostring(targetPlaceId))
+    gameNameLabel.Text = "🎮 Place #" .. tostring(targetPlaceId)
     gameNameLabel.TextColor3 = Color3.fromRGB(130, 215, 200)
     gameNameLabel.TextSize = 9
     gameNameLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -609,7 +574,6 @@ end
 
 local function scanPlayers()
     local matched = {}
-    local currentTitle, currentThumb = getPlaceDetails(game.PlaceId)
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
@@ -625,8 +589,6 @@ local function scanPlayers()
                         tag = tag:upper(),
                         jobId = game.JobId,
                         placeId = game.PlaceId,
-                        placeTitle = currentTitle,
-                        placeIcon = currentThumb,
                         seenAt = os.date("%H:%M:%S")
                     })
                     break
@@ -673,6 +635,15 @@ local function hopToUniqueServer()
 
     local placeKey = tostring(targetPlaceId)
     state.VisitedJobIdsByPlace[placeKey] = state.VisitedJobIdsByPlace[placeKey] or {}
+    
+    local visitedCount = 0
+    for _ in pairs(state.VisitedJobIdsByPlace[placeKey]) do visitedCount = visitedCount + 1 end
+    if visitedCount > 60 then
+        state.VisitedJobIdsByPlace[placeKey] = {}
+        if game.PlaceId == targetPlaceId and currentJob and currentJob ~= "" then
+            state.VisitedJobIdsByPlace[placeKey][currentJob] = true
+        end
+    end
     saveState()
 
     task.spawn(function()
@@ -729,7 +700,7 @@ local function hopToUniqueServer()
 
             StatusDot.BackgroundColor3 = Color3.fromRGB(100, 240, 140)
             StatusLabel.TextColor3 = Color3.fromRGB(100, 240, 140)
-            StatusLabel.Text = "Saltando para JobId: " .. candidate:sub(1, 10) .. "..."
+            StatusLabel.Text = "Saltando para: " .. candidate:sub(1, 10) .. "..."
 
             pcall(function()
                 TeleportService:TeleportToPlaceInstance(targetPlaceId, candidate, LocalPlayer)
@@ -737,7 +708,7 @@ local function hopToUniqueServer()
         else
             StatusDot.BackgroundColor3 = Color3.fromRGB(240, 140, 90)
             StatusLabel.TextColor3 = Color3.fromRGB(240, 140, 90)
-            StatusLabel.Text = "Ciclo completo. Resetando histórico..."
+            StatusLabel.Text = "Rate-limit ou sem vagas. Aguardando 4s..."
 
             state.VisitedJobIdsByPlace[placeKey] = {}
             if game.PlaceId == targetPlaceId and currentJob and currentJob ~= "" then
@@ -745,7 +716,7 @@ local function hopToUniqueServer()
             end
             saveState()
 
-            task.wait(1.5)
+            task.wait(4)
             isHopping = false
             if state.Active then
                 hopToUniqueServer()
@@ -798,6 +769,10 @@ local function runSearchPipeline()
             end
         end
 
+        if #state.SavedTargets > 30 then
+            table.remove(state.SavedTargets)
+        end
+
         saveState()
         refreshTargetsDisplay()
 
@@ -831,8 +806,8 @@ TeleportService.TeleportInitFailed:Connect(function(player, result, err)
         isHopping = false
         StatusDot.BackgroundColor3 = Color3.fromRGB(240, 100, 100)
         StatusLabel.TextColor3 = Color3.fromRGB(240, 100, 100)
-        StatusLabel.Text = "Falha no teleporte. Tentando outro JobId..."
-        task.wait(1)
+        StatusLabel.Text = "Falha no teleporte. Tentando outro..."
+        task.wait(1.5)
         hopToUniqueServer()
     end
 end)
