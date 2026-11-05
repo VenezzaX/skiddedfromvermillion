@@ -2,9 +2,17 @@ local SCRIPT_FILENAME = "TargetHunter.lua"
 local CONFIG_FILENAME = "TargetHunter_Config.json"
 
 local scriptContent = [==[
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+while not game.PlaceId or game.PlaceId == 0 do
+    task.wait()
+end
+
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local StarterGui = game:GetService("StarterGui")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
@@ -19,6 +27,7 @@ local MIN_FREE_SLOTS = 1
 local MAX_SEARCH_PAGES = 3
 local CURRENT_GAME_ID = game.PlaceId
 
+local placeNamesCache = {}
 local function getPlaceThumb(pId)
     local id = tonumber(pId) or CURRENT_GAME_ID
     return "rbxthumb://type=GameIcon&id=" .. tostring(id) .. "&w=150&h=150"
@@ -57,7 +66,11 @@ local function loadState()
         end)
         if success and type(result) == "table" then
             state.Active = result.Active or false
-            state.PlaceId = tonumber(result.PlaceId) or CURRENT_GAME_ID
+            if state.Active then
+                state.PlaceId = tonumber(result.PlaceId) or CURRENT_GAME_ID
+            else
+                state.PlaceId = CURRENT_GAME_ID
+            end
             state.Keywords = result.Keywords or {"yt", "ttk", "ttv"}
             state.SavedTargets = result.SavedTargets or {}
             state.VisitedJobIdsByPlace = result.VisitedJobIdsByPlace or {}
@@ -145,7 +158,7 @@ Title.Size = UDim2.new(1, -110, 1, 0)
 Title.Position = UDim2.new(0, 30, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Target Hunter • Ultra Lite"
+Title.Text = "Target Hunter • Auto-Detect"
 Title.TextColor3 = Color3.fromRGB(240, 243, 255)
 Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -199,7 +212,7 @@ ActiveGameTitle.Size = UDim2.new(1, -72, 0, 16)
 ActiveGameTitle.Position = UDim2.new(0, 68, 0, 8)
 ActiveGameTitle.BackgroundTransparency = 1
 ActiveGameTitle.Font = Enum.Font.GothamBold
-ActiveGameTitle.Text = "Place #" .. tostring(state.PlaceId)
+ActiveGameTitle.Text = "Detectando jogo..."
 ActiveGameTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
 ActiveGameTitle.TextSize = 11.5
 ActiveGameTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -207,7 +220,7 @@ ActiveGameTitle.TextTruncate = Enum.TextTruncate.AtEnd
 ActiveGameTitle.Parent = ActiveGameCard
 
 local PlaceInput = Instance.new("TextBox")
-PlaceInput.Size = UDim2.new(0.5, -4, 0, 26)
+PlaceInput.Size = UDim2.new(0.38, -4, 0, 26)
 PlaceInput.Position = UDim2.new(0, 68, 0, 32)
 PlaceInput.BackgroundColor3 = Color3.fromRGB(27, 30, 48)
 PlaceInput.TextColor3 = Color3.fromRGB(120, 210, 255)
@@ -223,9 +236,23 @@ local PlaceInputCorner = Instance.new("UICorner")
 PlaceInputCorner.CornerRadius = UDim.new(0, 5)
 PlaceInputCorner.Parent = PlaceInput
 
+local AutoDetectBtn = Instance.new("TextButton")
+AutoDetectBtn.Size = UDim2.new(0.16, -4, 0, 26)
+AutoDetectBtn.Position = UDim2.new(0.38, 68, 0, 32)
+AutoDetectBtn.BackgroundColor3 = Color3.fromRGB(45, 52, 80)
+AutoDetectBtn.Font = Enum.Font.GothamBold
+AutoDetectBtn.Text = "Auto"
+AutoDetectBtn.TextColor3 = Color3.fromRGB(140, 220, 255)
+AutoDetectBtn.TextSize = 10
+AutoDetectBtn.Parent = ActiveGameCard
+
+local AutoDetectCorner = Instance.new("UICorner")
+AutoDetectCorner.CornerRadius = UDim.new(0, 5)
+AutoDetectCorner.Parent = AutoDetectBtn
+
 local TagsInput = Instance.new("TextBox")
-TagsInput.Size = UDim2.new(0.5, -6, 0, 26)
-TagsInput.Position = UDim2.new(0.5, 68, 0, 32)
+TagsInput.Size = UDim2.new(0.46, -6, 0, 26)
+TagsInput.Position = UDim2.new(0.54, 68, 0, 32)
 TagsInput.BackgroundColor3 = Color3.fromRGB(27, 30, 48)
 TagsInput.TextColor3 = Color3.fromRGB(245, 245, 255)
 TagsInput.PlaceholderText = "yt, ttk, ttv"
@@ -239,6 +266,29 @@ TagsInput.Parent = ActiveGameCard
 local TagsInputCorner = Instance.new("UICorner")
 TagsInputCorner.CornerRadius = UDim.new(0, 5)
 TagsInputCorner.Parent = TagsInput
+
+local function updateActiveGameBanner()
+    local pId = state.PlaceId or CURRENT_GAME_ID
+    PlaceInput.Text = tostring(pId)
+    ActiveGameThumb.Image = getPlaceThumb(pId)
+    
+    if placeNamesCache[pId] then
+        ActiveGameTitle.Text = placeNamesCache[pId]
+    else
+        ActiveGameTitle.Text = "Place #" .. tostring(pId)
+        task.spawn(function()
+            local success, info = pcall(function()
+                return MarketplaceService:GetProductInfo(pId)
+            end)
+            if success and info and info.Name then
+                placeNamesCache[pId] = info.Name
+                if state.PlaceId == pId then
+                    ActiveGameTitle.Text = info.Name
+                end
+            end
+        end)
+    end
+end
 
 local TargetHeader = Instance.new("Frame")
 TargetHeader.Size = UDim2.new(1, -24, 0, 20)
@@ -366,9 +416,8 @@ local function syncPlaceId()
     local num = tonumber(cleaned)
     if num and num > 0 then
         state.PlaceId = num
-        ActiveGameTitle.Text = "Place #" .. tostring(num)
-        ActiveGameThumb.Image = getPlaceThumb(num)
         saveState()
+        updateActiveGameBanner()
         TargetListTitle.Text = string.format("ALVOS REGISTRADOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
     else
         PlaceInput.Text = tostring(state.PlaceId)
@@ -376,6 +425,16 @@ local function syncPlaceId()
 end
 
 PlaceInput.FocusLost:Connect(syncPlaceId)
+
+AutoDetectBtn.MouseButton1Click:Connect(function()
+    state.PlaceId = game.PlaceId
+    PlaceInput.Text = tostring(game.PlaceId)
+    saveState()
+    updateActiveGameBanner()
+    TargetListTitle.Text = string.format("ALVOS REGISTRADOS (%d) • HOP: %d", #state.SavedTargets, countVisited(state.PlaceId))
+end)
+
+updateActiveGameBanner()
 
 local queueReinject = nil
 
